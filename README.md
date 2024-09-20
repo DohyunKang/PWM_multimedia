@@ -15,7 +15,7 @@ Week2의 PWM 생성 프로젝트의 보완 버전입니다.
 ## UI
 ### [Operation]
 
-<img width="500" alt="2" src= "https://github.com/user-attachments/assets/1bda0d3e-10f8-4706-9f25-ae2cbfafee9e">
+<img width="500" alt="2" src= "https://github.com/user-attachments/assets/f96598d1-7d15-4735-a23e-f940b52eedb5">
 
 ## HardWare Setting
 <img width="500" alt="2" src= "https://github.com/user-attachments/assets/bf3dfe52-5251-47e6-8fe8-253b2e81a229">
