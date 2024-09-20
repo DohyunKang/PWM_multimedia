@@ -17,24 +17,6 @@ Week2의 PWM 생성 프로젝트의 보완 버전입니다.
 
 <img width="500" alt="2" src= "https://github.com/user-attachments/assets/1bda0d3e-10f8-4706-9f25-ae2cbfafee9e">
 
-### [Coverage error handling]
-
-<img width="500" alt="2" src= "https://github.com/user-attachments/assets/111de6fc-041e-4f76-a774-c4f0567e6576">
-
-## [Capture 그래프 기능 추가 수정]
-### 한 주기의 한 펄스만 캡쳐함.
-#### Duty와 Period, Voltage가 바뀌면 그래프의 x,y축과 펄스의 모양이 그에 맞게 생성
-#### 1.
-<img width="500" alt="2" src= "https://github.com/user-attachments/assets/1f15aeed-7c77-4165-abe5-cbe5a6096ba1">
-
-#### 2. low v : 0V, high v : 5V, duty : 50%, period : 500ms
-
-<img width="500" alt="2" src= "https://github.com/user-attachments/assets/00bb9638-33f5-4852-a290-7b75f1c7ff3e">
-
-#### 3. low v : 2V, high v : 5V, duty : 30%, period : 500ms
-
-<img width="500" alt="2" src= "https://github.com/user-attachments/assets/4bba27c8-6955-4394-8e55-5fe4668627fa">
-
 ## HardWare Setting
 <img width="500" alt="2" src= "https://github.com/user-attachments/assets/bf3dfe52-5251-47e6-8fe8-253b2e81a229">
 
