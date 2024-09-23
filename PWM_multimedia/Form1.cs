@@ -1,38 +1,41 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks; // System.Threading.Tasks.Task 명확히 사용
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using NationalInstruments.DAQmx;
 using System.Collections.Generic;
+using System.Data.SqlServerCe;
 
 namespace PWM_multimedia
 {
     public partial class Form1 : Form
     {
-        private NationalInstruments.DAQmx.Task writeTask; // AO Task
-        private NationalInstruments.DAQmx.Task analogReadTask; // AI Task
+        private NationalInstruments.DAQmx.Task writeTask;
+        private NationalInstruments.DAQmx.Task analogReadTask;
         private AnalogSingleChannelWriter writer;
         private AnalogSingleChannelReader analogReader;
 
-        private double outputVoltage; // PWM output voltage
-        private double inputVoltage; // AI input voltage
-        private double frequency; // Frequency of the PWM signal
-        private double dutyCycle; // Duty cycle of the PWM signal (0-100%)
+        private double outputVoltage;
+        private double inputVoltage;
+        private double frequency;
+        private double dutyCycle;
         private bool pwmStateHigh;
-        private double highTime; // Time the signal is high
-        private double lowTime;  // Time the signal is low
-        private double pwmElapsed; // Elapsed time
+        private double highTime;
+        private double lowTime;
+        private double pwmElapsed;
 
-        private double HighV;    // Voltage when signal is high
-        private double LowV;     // Voltage when signal is low
+        private double HighV;
+        private double LowV;
 
         private DateTime lastPwmTime = DateTime.Now;
-        private DateTime cycleStartTime = DateTime.Now; // 주기 시작 시간 기록
+        private DateTime cycleStartTime = DateTime.Now;
 
-        private double previousVoltage = 0; // 이전 전압 상태
-        private DateTime lastEdgeTime = DateTime.Now; // Edge time record
+        private double previousVoltage = 0;
+        private DateTime lastEdgeTime = DateTime.Now;
 
-        private bool flag = false; // Switch state flag
+        private bool flag = false;
+        private int pwmIndex = 0; // 프로그램 종료 시 0로 초기화됨
+        private int currentPwmId = 0; // 자동 증가되는 p_index 관리
 
         public Form1()
         {
@@ -45,26 +48,22 @@ namespace PWM_multimedia
             writeTask = new NationalInstruments.DAQmx.Task();
             analogReadTask = new NationalInstruments.DAQmx.Task();
 
-            // AO channel for PWM signal generation
             writeTask.AOChannels.CreateVoltageChannel("Dev1/ao0", "", 0.0, 5.0, AOVoltageUnits.Volts);
-
-            // AI channel for reading the PWM signal
             analogReadTask.AIChannels.CreateVoltageChannel("Dev1/ai0", "", AITerminalConfiguration.Rse, 0.0, 5.0, AIVoltageUnits.Volts);
 
             writer = new AnalogSingleChannelWriter(writeTask.Stream);
             analogReader = new AnalogSingleChannelReader(analogReadTask.Stream);
 
-            frequency = 50;  // Default frequency to 50Hz
-            dutyCycle = 50;  // Default duty cycle 50%
-            HighV = 5;       // Maximum voltage 5V
-            LowV = 0;        // Minimum voltage 0V
+            frequency = 50;
+            dutyCycle = 50;
+            HighV = 5;
+            LowV = 0;
 
-            UpdatePWMParameters(); // Initialize PWM parameters
+            UpdatePWMParameters();
         }
 
         private void StartMultimediaTimer()
         {
-            // 비동기적으로 PWM 및 AI 데이터 처리 시작
             System.Threading.Tasks.Task.Run(() => GeneratePWMAndReadAIAsync());
         }
 
@@ -73,7 +72,6 @@ namespace PWM_multimedia
             flag = false;
         }
 
-        // 비동기 메서드로 Task 반환
         private async System.Threading.Tasks.Task GeneratePWMAndReadAIAsync()
         {
             flag = true;
@@ -83,105 +81,83 @@ namespace PWM_multimedia
                 TimeSpan deltaTime = currentTime - lastPwmTime;
                 double elapsedSeconds = deltaTime.TotalSeconds;
 
-                pwmElapsed += elapsedSeconds; // 경과 시간 추가
-                lastPwmTime = currentTime;    // 마지막 PWM 발생 시간 갱신
+                pwmElapsed += elapsedSeconds;
+                lastPwmTime = currentTime;
 
-                // PWM 신호 생성
                 if (pwmStateHigh && pwmElapsed >= highTime)
                 {
-                    outputVoltage = LowV; // 신호를 Low로 설정
-                    writer.WriteSingleSample(true, LowV); // 실제 전압 출력
+                    outputVoltage = LowV;
+                    writer.WriteSingleSample(true, LowV);
                     pwmStateHigh = false;
                     pwmElapsed = 0;
                 }
                 else if (!pwmStateHigh && pwmElapsed >= lowTime)
                 {
-                    outputVoltage = HighV; // 신호를 High로 설정
-                    writer.WriteSingleSample(true, HighV); // 실제 전압 출력
+                    outputVoltage = HighV;
+                    writer.WriteSingleSample(true, HighV);
                     pwmStateHigh = true;
                     pwmElapsed = 0;
                 }
 
-                // AI 채널에서 PWM 신호 읽기
                 inputVoltage = analogReader.ReadSingleSample();
 
-                // 주기 및 듀티 계산
-                if (previousVoltage <= (LowV+0.1) && inputVoltage >= (HighV-0.1))
+                if (previousVoltage <= (LowV + 0.1) && inputVoltage >= (HighV - 0.1))
                 {
-                    TimeSpan periodTime = currentTime - lastEdgeTime; // 주기 계산
+                    TimeSpan periodTime = currentTime - lastEdgeTime;
                     lastEdgeTime = currentTime;
 
-                    double period = periodTime.TotalSeconds * 1000; // 주기(ms)
-                    double calculatedFrequency = 1000 / period; // 주파수(Hz)
+                    double period = periodTime.TotalSeconds * 1000;
+                    double calculatedFrequency = 1000 / period;
 
-                    // 실제 듀티 사이클 계산
                     double actualDutyCycle = (highTime / periodTime.TotalSeconds) * 100;
 
-                    // 로그 출력으로 값 확인
-                    Console.WriteLine("주기: {period} ms, 주파수: {calculatedFrequency} Hz, 듀티: {actualDutyCycle}%");
-
-                    // UI에 주기, 주파수, 듀티 사이클 값 업데이트 (Invoke로 UI 스레드에서 업데이트)
                     this.Invoke((MethodInvoker)delegate
                     {
-                        lblPeriod.Text = period.ToString("F2");  // 주기(ms)
-                        lblFrequency.Text = calculatedFrequency.ToString("F2"); // 주파수(Hz)
-                        lblDuty.Text = actualDutyCycle.ToString("F2");   // 듀티 사이클(%)
+                        lblPeriod.Text = period.ToString("F2");
+                        lblFrequency.Text = calculatedFrequency.ToString("F2");
+                        lblDuty.Text = actualDutyCycle.ToString("F2");
                     });
                 }
 
-                previousVoltage = inputVoltage; // 이전 전압 상태 갱신
+                previousVoltage = inputVoltage;
 
-                // 실시간 그래프 업데이트
                 this.Invoke((MethodInvoker)delegate
                 {
                     ContinuousWfg.PlotYAppend(inputVoltage, elapsedSeconds);
                 });
 
-                // 1ms 대기
                 await System.Threading.Tasks.Task.Delay(1);
             }
         }
 
-        // PWM 주기 및 듀티 사이클 업데이트
         private void UpdatePWMParameters()
         {
-            double period = 1.0 / frequency; // 전체 주기(초)
-            highTime = period * (dutyCycle / 100.0); // 듀티 사이클에 따른 High 상태 유지 시간
-            lowTime = period - highTime; // 나머지 시간은 Low 상태 유지
+            double period = 1.0 / frequency;
+            highTime = period * (dutyCycle / 100.0);
+            lowTime = period - highTime;
             pwmElapsed = 0;
-            pwmStateHigh = true; // 초기 상태를 High로 설정
+            pwmStateHigh = true;
         }
 
-        // Apply 버튼 클릭 시, Edit에서 입력받은 값을 가져와 PWM 파라미터 업데이트
         private void ApplyButton_Click_1(object sender, EventArgs e)
         {
             try
             {
-                frequency = 1000 / (double)PeriodEdit.Value; // 주기(ms)의 역수로 주파수 계산
-                dutyCycle = (double)DutyEdit.Value;   // 듀티 사이클 (%)
-                HighV = (double)HighEdit.Value;       // 최대 전압
-                LowV = (double)LowEdit.Value;         // 최소 전압
+                frequency = 1000 / (double)PeriodEdit.Value;
+                dutyCycle = (double)DutyEdit.Value;
+                HighV = (double)HighEdit.Value;
+                LowV = (double)LowEdit.Value;
 
-                UpdatePWMParameters(); // 새로운 파라미터로 PWM 신호 설정
+                UpdatePWMParameters();
+
+                pwmIndex++; // Apply할 때마다 증가
+                currentPwmId = InsertPwmDataToDatabase((float)PeriodEdit.Value, (float)(1000 / PeriodEdit.Value), (float)HighEdit.Value, (float)DutyEdit.Value, 1, pwmIndex);
 
                 MessageBox.Show("파라미터 업데이트 완료");
             }
             catch (Exception ex)
             {
                 MessageBox.Show("파라미터 업데이트 중 오류 발생: " + ex.Message);
-            }
-        }
-
-        // 스위치 상태 변경에 따라 PWM 신호 제어
-        private void switch1_StateChanged(object sender, NationalInstruments.UI.ActionEventArgs e)
-        {
-            if (!flag)
-            {
-                StartMultimediaTimer(); // 비동기식으로 PWM 및 AI 데이터 처리 시작
-            }
-            else
-            {
-                StopMultimediaTimer(); // 타이머 중지
             }
         }
 
@@ -193,47 +169,143 @@ namespace PWM_multimedia
                 return;
             }
 
-            List<double> capturedSignal = new List<double>();  // 한 주기의 신호를 캡처할 리스트
+            double calculatedPeriod = double.Parse(lblPeriod.Text);
+            double calculatedDutyCycle = double.Parse(lblDuty.Text);
 
-            // Parameter 기반으로 주기와 듀티 사이클 가져오기
-            double calculatedPeriod = double.Parse(lblPeriod.Text);      // 주기 (ms)
-            double calculatedDutyCycle = double.Parse(lblDuty.Text);     // 듀티 사이클 (%)
+            double highTime = (calculatedDutyCycle / 100.0) * calculatedPeriod;
+            double lowTime = calculatedPeriod - highTime;
 
-            // High와 Low 상태에서 유지해야 할 시간 계산
-            double highTime = (calculatedDutyCycle / 100.0) * calculatedPeriod;  // High 상태 유지 시간 (ms)
-            double lowTime = calculatedPeriod - highTime;                        // Low 상태 유지 시간 (ms)
+            List<double> capturedSignal = new List<double>();
+            double timeStep = 1.0;
 
-            // 샘플링 시간 (1ms 간격으로 샘플링)
-            double timeStep = 1.0;  // 샘플링 간격을 1ms로 설정
-
-            // 한 주기 동안 신호 캡처 (highTime 동안 HighV, lowTime 동안 LowV)
             for (double t = 0; t < calculatedPeriod; t += timeStep)
             {
                 if (t < highTime)
                 {
-                    // High 상태 유지
                     capturedSignal.Add(HighV);
                 }
                 else
                 {
-                    // Low 상태 유지
                     capturedSignal.Add(LowV);
                 }
             }
 
-            // 캡처된 신호가 있으면 CaptureWfg에 출력
             if (capturedSignal.Count > 0)
             {
-                CaptureWfg.PlotY(capturedSignal.ToArray()); // 캡처된 신호를 그래프에 출력
+                CaptureWfg.PlotY(capturedSignal.ToArray());
+
+                // Capture 시점의 p_index 값을 c_index로 참조
+                int pIndexFromDatabase = GetLastInsertedPwmIndex();
+                InsertCalculateDataToDatabase((float)calculatedPeriod, (float)(1000 / calculatedPeriod), (float)HighV, (float)calculatedDutyCycle, pIndexFromDatabase, pwmIndex);
             }
         }
 
+        private int GetLastInsertedPwmIndex()
+        {
+            try
+            {
+                using (SqlCeConnection conn = new SqlCeConnection(@"Data Source = C:\Users\kangdohyun\Desktop\세미나\2주차\PWM_multimedia\MyDatabase#1.sdf"))
+                {
+                    conn.Open();
+
+                    string query = "SELECT MAX(p_index) FROM PwmData";
+                    using (SqlCeCommand cmd = new SqlCeCommand(query, conn))
+                    {
+                        object result = cmd.ExecuteScalar();
+                        return (int)(result ?? 0);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("p_index 조회 중 오류 발생: " + ex.Message);
+                return -1;
+            }
+        }
+
+        private int InsertPwmDataToDatabase(float period, float frequency, float voltage, float duty, int switchState, int pwmIndex)
+        {
+            try
+            {
+                using (SqlCeConnection conn = new SqlCeConnection(@"Data Source = C:\Users\kangdohyun\Desktop\세미나\2주차\PWM_multimedia\MyDatabase#1.sdf"))
+                {
+                    conn.Open();
+
+                    string query = "INSERT INTO PwmData (Period, Frequency, Voltage, Duty, Switch, Time, pwmIndex) VALUES (@Period, @Frequency, @Voltage, @Duty, @Switch, @Time, @pwmIndex)";
+                    using (SqlCeCommand cmd = new SqlCeCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Period", period);
+                        cmd.Parameters.AddWithValue("@Frequency", frequency);
+                        cmd.Parameters.AddWithValue("@Voltage", voltage);
+                        cmd.Parameters.AddWithValue("@Duty", duty);
+                        cmd.Parameters.AddWithValue("@Switch", switchState);
+                        cmd.Parameters.AddWithValue("@Time", lastPwmTime);
+                        cmd.Parameters.AddWithValue("@pwmIndex", pwmIndex); // Apply 누를 때 증가하는 pwmIndex 저장
+
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    return GetLastInsertedPwmIndex();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("데이터 삽입 중 오류 발생: " + ex.Message);
+                return -1;
+            }
+        }
+
+        private int InsertCalculateDataToDatabase(float c_period, float c_frequency, float c_voltage, float c_duty, int p_index, int pwmIndex)
+        {
+            try
+            {
+                using (SqlCeConnection conn = new SqlCeConnection(@"Data Source = C:\Users\kangdohyun\Desktop\세미나\2주차\PWM_multimedia\MyDatabase#1.sdf"))
+                {
+                    conn.Open();
+
+                    string query = "INSERT INTO Calculate (C_Period, C_Frequency, C_Voltage, C_Duty, Time, c_index, pwmIndex) VALUES (@C_Period, @C_Frequency, @C_Voltage, @C_Duty, @Time, @c_index, @pwmIndex)";
+                    using (SqlCeCommand cmd = new SqlCeCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@C_Period", c_period);
+                        cmd.Parameters.AddWithValue("@C_Frequency", c_frequency);
+                        cmd.Parameters.AddWithValue("@C_Voltage", c_voltage);
+                        cmd.Parameters.AddWithValue("@C_Duty", c_duty);
+                        cmd.Parameters.AddWithValue("@Time", lastPwmTime);
+                        cmd.Parameters.AddWithValue("@c_index", p_index); // c_index가 p_index를 참조
+                        cmd.Parameters.AddWithValue("@pwmIndex", pwmIndex); // pwmIndex도 저장
+
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    return p_index;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Calculate 데이터 삽입 중 오류 발생: " + ex.Message);
+                return -1;
+            }
+        }
 
         private void ResetButton_Click(object sender, EventArgs e)
         {
-            StopMultimediaTimer(); // 타이머 중지
-            writer.WriteSingleSample(true, 0); // PWM 신호를 0V로 설정
-            ContinuousWfg.ClearData(); // 그래프 초기화
+            StopMultimediaTimer();
+            writer.WriteSingleSample(true, 0);
+            ContinuousWfg.ClearData();
+        }
+
+        private void switch1_StateChanged(object sender, EventArgs e)
+        {
+            if (!flag)
+            {
+                StartMultimediaTimer(); // 타이머 시작
+                flag = true; // PWM 신호를 활성화 상태로 설정
+            }
+            else
+            {
+                StopMultimediaTimer(); // 타이머 중지
+                flag = false; // PWM 신호를 비활성화 상태로 설정
+            }
         }
     }
 }
