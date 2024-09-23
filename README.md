@@ -1,4 +1,4 @@
-# PWM with Multimedia Timer(2주차 추가 기능 및 보완)
+![image](https://github.com/user-attachments/assets/78529099-a78a-46a5-8e37-e25cbde406d4)# PWM with Multimedia Timer(2주차 추가 기능 및 보완)
 
 ## 설명
 Week2의 PWM 생성 프로젝트의 보완 버전입니다.
@@ -21,6 +21,14 @@ Week2의 PWM 생성 프로젝트의 보완 버전입니다.
 <img width="500" alt="2" src= "https://github.com/user-attachments/assets/bf3dfe52-5251-47e6-8fe8-253b2e81a229">
 
 <img width="500" alt="2" src= "https://github.com/user-attachments/assets/ec5136ba-c9e1-4e02-afd9-3699ffb34f77">
+
+## DB 저장
+
+### PwmData DB
+<img width="500" alt="2" src= "https://github.com/user-attachments/assets/8ee28c59-f048-42da-8af9-ae06b5161a12">
+
+### calculate DB
+<img width="500" alt="2" src= "https://github.com/user-attachments/assets/5bc78c5a-20c2-47ac-bed4-b57499013053">
 
 ## 설치 방법
 1. 이 저장소를 클론합니다:
