@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/78529099-a78a-46a5-8e37-e25cbde406d4)# PWM with Multimedia Timer(2주차 추가 기능 및 보완)
+# PWM with Multimedia Timer(2주차 추가 기능 및 보완)
 
 ## 설명
 Week2의 PWM 생성 프로젝트의 보완 버전입니다.
