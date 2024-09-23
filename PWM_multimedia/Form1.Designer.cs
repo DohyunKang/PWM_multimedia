@@ -1,4 +1,4 @@
-﻿namespace PWM_multimedia
+namespace PWM_multimedia
 {
     partial class Form1
     {
