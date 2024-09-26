@@ -30,6 +30,16 @@ Week2의 PWM 생성 프로젝트의 보완 버전입니다.
 ### calculate DB
 <img width="500" alt="2" src= "https://github.com/user-attachments/assets/5bc78c5a-20c2-47ac-bed4-b57499013053">
 
+### 오실로스코프 신호 캡쳐 ( 오차율 )
+
+- Period : 1000ms, Duty : 50%
+
+<img width="500" alt="Period = 500ms Duty = 50%" src="https://github.com/user-attachments/assets/9ef35b6b-c2f8-479c-a855-d4e8ebaead15">
+
+- Period : 100ms, Duty : 14.5%
+
+<img width="500" alt="Period = 100ms Duty = 10%" src="https://github.com/user-attachments/assets/30562e4f-6474-434a-9f22-5e738bb7a09e">
+
 ## 설치 방법
 1. 이 저장소를 클론합니다:
    ```bash
