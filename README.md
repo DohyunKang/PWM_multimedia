@@ -51,6 +51,7 @@ Week2의 PWM 생성 프로젝트의 보완 버전입니다.
 - [NI 공식 문서](https://www.ni.com)
 - [Measurement & Automation Explorer (MAX) 사용법](https://www.ni.com/ko-kr/support/downloads/software-products/download.ni-measurement-automation-explorer-(max).html)
 - [PWM의 이해와 활용](https://your-document-link)
+- [Week2_DH.pptx](https://github.com/user-attachments/files/17144200/Week2_DH.pptx)
 
 ### 추가 정보
 - 이 프로젝트는 C# 및 .NET Framework를 사용하여 개발되었습니다.
